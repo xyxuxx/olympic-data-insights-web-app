@@ -99,3 +99,13 @@ def medal_in_sports_over_time_by_country(df, country):
     pt = medal_in_sports_over_time.pivot_table(index='Sport', columns='Year', values='Medal', aggfunc='count').fillna(0).astype('int')
 
     return  pt
+
+
+def filter_sport(athlets_df, sport):
+    temp_df = athlets_df
+    if sport == 'Overall':
+        filter_sport = temp_df
+    if sport != 'Overall':
+        filter_sport = temp_df[temp_df['Sport'] == sport]
+
+    return  filter_sport

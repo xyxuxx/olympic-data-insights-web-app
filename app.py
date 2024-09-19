@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # Module Importing
 import preprocessor, helper
-from helper import medal_over_time_by_country
+from helper import medal_over_time_by_country, filter_medal
 
 df = pd.read_csv('./data/athlete_events.csv')
 region_df = pd.read_csv('./data/noc_regions.csv')
@@ -83,17 +83,17 @@ if user_menu == 'Overall Analysis':
 
     # Most Successful Athlets Tally
     with st.container(border=True):
-        sport_name = helper.list_maker(df, 'Sport')
-        st.header(f'Most Successful Athlets')
-        selected_sports = st.selectbox('Select Sports', sport_name)
-        gold_medal_tally = helper.filter_gold_medal_tally_by_sports(df, selected_sports)
+        st.header(f'Most Successful Athlets (Overall)')
+        gold_medal_tally = helper.filter_gold_medal_tally_by_sports(df, 'Overall')
         st.table(gold_medal_tally)
 
     # Count plot of Medal won by countries over time
     top_10_country, top_10_medal_df = helper.top_10_country(df)
     with st.container(border=True):
         fig = plt.figure(figsize=(10, 5))
-        sns.countplot(top_10_medal_df, x='region', hue='Medal', order=top_10_country, palette='bright')
+        custom_params = {"axes.spines.right": False, "axes.spines.top": False}
+        sns.set_theme(style="white", palette='Set1', rc=custom_params)
+        sns.countplot(top_10_medal_df, x='region', hue='Medal', order=top_10_country)
         plt.title('Total Medals by Top 10 Countries')
         plt.xlabel("Country")
         plt.ylabel('Number of Medals')
@@ -102,7 +102,7 @@ if user_menu == 'Overall Analysis':
     # Count plot of Total Medals won by male and female of Top 10 Country
     with st.container(border=True):
         fig = plt.figure(figsize=(10, 5))
-        sns.countplot(top_10_medal_df, x='region', hue='Sex', order=top_10_country, palette='bright')
+        sns.countplot(top_10_medal_df, x='region', hue='Sex', order=top_10_country)
         plt.title('Total Medals won by Male and Female of Top 10 Countries')
         plt.xlabel("Country")
         plt.ylabel('Number of Medals')
@@ -112,8 +112,6 @@ if user_menu == 'Overall Analysis':
     with st.container(border=True):
         nations_over_time = helper.graph_over_time(df, 'region')
         fig = plt.figure(figsize=(10, 5))
-        custom_params = {"axes.spines.right": False, "axes.spines.top": False}
-        sns.set_theme(style="white", palette='Spectral', rc=custom_params)
         sns.lineplot(data=nations_over_time, x="Year", y="region")
         plt.title('Number of Participating Nations over the Years')
         plt.xlabel('Edition')
@@ -150,17 +148,6 @@ if user_menu == 'Overall Analysis':
         plt.ylabel('No of Perticipants')
         st.pyplot(fig)
 
-    # Bar plot of The average age of athletes has changed over time
-    with st.container(border=True):
-        avg_age_over_time = round(df.groupby(['Year', 'Sex'])['Age'].mean()).reset_index()
-        fig = plt.figure(figsize=(10, 5))
-        sns.barplot(avg_age_over_time, x='Year', y='Age', hue='Sex')
-        plt.title('The average age of athletes has changed over time')
-        plt.xticks(rotation=90)
-        plt.xlabel('Edition')
-        plt.ylabel('Average Age')
-        st.pyplot(fig)
-
     # Heatmap of No of Events in every Sports over the Years
     with st.container(border=True):
         fig = plt.figure(figsize=(20, 13))
@@ -185,8 +172,8 @@ if user_menu == "Country-wise Analysis":
     with st.container(border=True):
         medal_over_time_by_country = helper.medal_over_time_by_country(df, selected_country_for_medal)
         fig = plt.figure(figsize=(10, 5))
-        sns.lineplot(medal_over_time_by_country, x='Year', y='Medal', palette='bright')
-        plt.title(f'{selected_country_for_medal} performance over Time')
+        sns.lineplot(medal_over_time_by_country, x='Year', y='Medal')
+        plt.title(f'{selected_country_for_medal} performance over the Years')
         plt.xlabel("Year")
         plt.ylabel('Number of Medals')
         st.pyplot(fig)
@@ -198,6 +185,81 @@ if user_menu == "Country-wise Analysis":
         sns.heatmap(pt, annot=True)
         st.header(f'{selected_country_for_medal} performance in every Sports over the Years')
         st.pyplot(fig)
+
+if user_menu == 'Athlete-wise Analysis':
+    athlets_df = df.drop_duplicates(subset=['Name', 'region'])
+
+    # Most Successful Athlets Tally
+    with st.container(border=True):
+        sport_name = helper.list_maker(df, 'Sport')
+        st.header(f'Most Successful Athlets')
+        selected_sports = st.selectbox('Select Sports', sport_name)
+        gold_medal_tally = helper.filter_gold_medal_tally_by_sports(df, selected_sports)
+        st.table(gold_medal_tally)
+
+    # Scatter plot of Height vs Weight
+    with st.container(border=True):
+        st.header('Height vs Weight')
+        selected_sport = helper.list_maker(athlets_df, 'Sport')
+        selected_sport = st.selectbox('Select Sport: ', selected_sport)
+        filter_sport = helper.filter_sport(athlets_df, selected_sport)
+        fig = plt.figure(figsize=(10, 5))
+        sns.scatterplot(filter_sport, x='Height', y='Weight', hue='Medal', style='Sex')
+        st.pyplot(fig)
+
+    # Bar plot of The average age of athletes has changed over time
+    with st.container(border=True):
+        avg_age_over_time = round(df.groupby(['Year', 'Sex'])['Age'].mean()).reset_index()
+        fig = plt.figure(figsize=(10, 5))
+        sns.barplot(avg_age_over_time, x='Year', y='Age', hue='Sex')
+        plt.title('The average age of athletes has changed over time')
+        plt.xticks(rotation=90)
+        plt.xlabel('Edition')
+        plt.ylabel('Average Age')
+        st.pyplot(fig)
+
+    # Filtering Athlets by their corresponded Medal
+    gold_medalist = athlets_df[athlets_df['Medal'] == 'Gold']
+    silver_medalist = athlets_df[athlets_df['Medal'] == 'Silver']
+    bronze_medalist = athlets_df[athlets_df['Medal'] == 'Bronze']
+
+    # Age Distribution of Athlets
+    age = athlets_df['Age'].dropna().reset_index()
+    with st.container(border=True):
+        fig = plt.figure(figsize=(10, 5))
+        sns.kdeplot(age, x='Age', label='Overall Age', linewidth=2)
+        sns.kdeplot(gold_medalist, x='Age', label='Gold Medalists Age', linewidth=2)
+        sns.kdeplot(silver_medalist, x='Age', label='Silver Medalists Age', linewidth=2)
+        sns.kdeplot(bronze_medalist, x='Age', label='Bronze Medalists Age', linewidth=2)
+        plt.legend()
+        plt.title('Age Distribution of Athlets')
+        st.pyplot(fig)
+
+    # weight Distribution of Athlets
+    weight = athlets_df['Weight'].dropna().reset_index()
+    with st.container(border=True):
+        fig = plt.figure(figsize=(10, 5))
+        sns.kdeplot(weight, x='Weight', label='Overall Weight', linewidth=2)
+        sns.kdeplot(gold_medalist, x='Weight', label='Gold Medalists Weight', linewidth=2)
+        sns.kdeplot(silver_medalist, x='Weight', label='Silver Medalists Weight', linewidth=2)
+        sns.kdeplot(bronze_medalist, x='Weight', label='Bronze Medalists Weight', linewidth=2)
+        plt.legend()
+        plt.title('Weight Distribution of Athlets')
+        st.pyplot(fig)
+
+    # Height Distribution of Athlets
+    height = athlets_df['Height'].dropna().reset_index()
+    with st.container(border=True):
+        fig = plt.figure(figsize=(10, 5))
+        sns.kdeplot(height, x='Height', label='Overall Height', linewidth=2)
+        sns.kdeplot(gold_medalist, x='Height', label='Gold Medalists Height', linewidth=2)
+        sns.kdeplot(silver_medalist, x='Height', label='Silver Medalists Height', linewidth=2)
+        sns.kdeplot(bronze_medalist, x='Height', label='Bronze Medalists Height', linewidth=2)
+        plt.legend()
+        plt.title('Height Distribution of Athlets')
+        st.pyplot(fig)
+
+
 
 
 
