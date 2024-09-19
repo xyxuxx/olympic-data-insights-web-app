@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 # Module Importing
 import preprocessor, helper
+from helper import medal_over_time_by_country
 
 df = pd.read_csv('./data/athlete_events.csv')
 region_df = pd.read_csv('./data/noc_regions.csv')
@@ -26,7 +27,8 @@ user_menu = st.sidebar.radio(
 
 # Medal Tally
 if user_menu == 'Medal Tally':
-    country, years = helper.country_and_year(df)
+    country = helper.list_maker(df, 'region')
+    years = helper.list_maker(df, 'Year')
     selected_year = st.sidebar.selectbox('Select Year: ', years)
     selected_country = st.sidebar.selectbox('Select Country: ', country)
     medal_tally = helper.filter_medal(df, selected_year, selected_country)
@@ -81,57 +83,82 @@ if user_menu == 'Overall Analysis':
 
     # Most Successful Athlets Tally
     with st.container(border=True):
-        sport_name = helper.sports(df)
-        st.header('Most Successful Athlets')
+        sport_name = helper.list_maker(df, 'Sport')
+        st.header(f'Most Successful Athlets')
         selected_sports = st.selectbox('Select Sports', sport_name)
-        gold_medal_tally = helper.filter_gold_medal_tally(df, selected_sports)
+        gold_medal_tally = helper.filter_gold_medal_tally_by_sports(df, selected_sports)
         st.table(gold_medal_tally)
+
+    # Count plot of Medal won by countries over time
+    top_10_country, top_10_medal_df = helper.top_10_country(df)
+    with st.container(border=True):
+        fig = plt.figure(figsize=(10, 5))
+        sns.countplot(top_10_medal_df, x='region', hue='Medal', order=top_10_country, palette='bright')
+        plt.title('Total Medals by Top 10 Countries')
+        plt.xlabel("Country")
+        plt.ylabel('Number of Medals')
+        st.pyplot(fig)
+
+    # Count plot of Total Medals won by male and female of Top 10 Country
+    with st.container(border=True):
+        fig = plt.figure(figsize=(10, 5))
+        sns.countplot(top_10_medal_df, x='region', hue='Sex', order=top_10_country, palette='bright')
+        plt.title('Total Medals won by Male and Female of Top 10 Countries')
+        plt.xlabel("Country")
+        plt.ylabel('Number of Medals')
+        st.pyplot(fig)
 
     # Line plot of No of Nations over the Years
     with st.container(border=True):
         nations_over_time = helper.graph_over_time(df, 'region')
         fig = plt.figure(figsize=(10, 5))
-        #sns.set_style("whitegrid")
         custom_params = {"axes.spines.right": False, "axes.spines.top": False}
         sns.set_theme(style="white", palette='Spectral', rc=custom_params)
-        sns.lineplot(data=nations_over_time, x="Edition", y="No of Regions")
-        st.header('Number of Participating Nations over the Years')
+        sns.lineplot(data=nations_over_time, x="Year", y="region")
+        plt.title('Number of Participating Nations over the Years')
+        plt.xlabel('Edition')
+        plt.ylabel('No of Participation Nations')
         st.pyplot(fig)
 
     # Line plot of No of Events over the Years
     with st.container(border=True):
         events_over_time = helper.graph_over_time(df, 'Event')
         fig = plt.figure(figsize=(10, 5))
-        sns.lineplot(data=events_over_time, x="Edition", y="No of Events")
-        st.header('Number of Events over the Years')
+        sns.lineplot(data=events_over_time, x="Year", y="Event")
+        plt.xlabel('Edition')
+        plt.ylabel('No of Events')
+        plt.title('Number of Events over the Years')
         st.pyplot(fig)
 
     # Line plot of No of Medals over the Years
     with st.container(border=True):
         medal_over_time = df.groupby('Year')['Total'].sum().reset_index()
-        medal_over_time.rename(columns={'Year': 'Edition', 'Total': 'Total Medal'}, inplace=True)
         fig = plt.figure(figsize=(10, 5))
-        sns.lineplot(medal_over_time, x='Edition', y='Total Medal')
-        st.header('Number of Medals over the Years')
+        sns.lineplot(medal_over_time, x='Year', y='Total')
+        plt.title('Number of Medals over the Years')
+        plt.xlabel('Edition')
+        plt.ylabel('Number of Medals')
         st.pyplot(fig)
 
     # Line plot of No of Participating Athlets based on Gender over the Years
     with st.container(border=True):
         perticipation_over_time_by_gender = df.groupby(['Year', 'Sex'])['Name'].nunique().reset_index()
-        perticipation_over_time_by_gender.rename(columns={'Year': 'Edition', 'Name': 'No of Perticipants'}, inplace=True)
         fig = plt.figure(figsize=(10, 5))
-        sns.lineplot(perticipation_over_time_by_gender, x='Edition', y='No of Perticipants', hue='Sex')
-        st.header('Number of Perticipating Athlets based on Gender over the Years')
+        sns.lineplot(perticipation_over_time_by_gender, x='Year', y='Name', hue='Sex')
+        plt.title('Number of Perticipating Athlets based on Gender over the Years')
+        plt.xlabel('Edition')
+        plt.ylabel('No of Perticipants')
         st.pyplot(fig)
 
     # Bar plot of The average age of athletes has changed over time
     with st.container(border=True):
         avg_age_over_time = round(df.groupby(['Year', 'Sex'])['Age'].mean()).reset_index()
-        avg_age_over_time.rename(columns={'Year': 'Edition', 'Age': 'Average Age'}, inplace=True)
         fig = plt.figure(figsize=(10, 5))
-        sns.barplot(avg_age_over_time, x='Edition', y='Average Age', hue='Sex')
+        sns.barplot(avg_age_over_time, x='Year', y='Age', hue='Sex')
+        plt.title('The average age of athletes has changed over time')
         plt.xticks(rotation=90)
-        st.header('The average age of athletes has changed over time')
+        plt.xlabel('Edition')
+        plt.ylabel('Average Age')
         st.pyplot(fig)
 
     # Heatmap of No of Events in every Sports over the Years
@@ -140,6 +167,38 @@ if user_menu == 'Overall Analysis':
         x = df.drop_duplicates(['Year', 'Event', 'Sport'])
         sns.heatmap(x.pivot_table(index='Sport', columns='Year', values='Event', aggfunc='count').fillna(0).astype('int'), annot=True)
         plt.xticks(rotation=90)
-        st.header('No of Events in every Sports over the Years')
+        st.subheader('Number of Events in every Sports over the Years')
         st.pyplot(fig)
+
+# Country wise Analysis
+if user_menu == "Country-wise Analysis":
+    country_for_medal = helper.list_maker(df, 'region')
+    selected_country_for_medal = st.sidebar.selectbox('Select Country: ', country_for_medal)
+
+    # Most Successful Athlets Tally
+    with st.container(border=True):
+        st.header(f'Most Successful Athlets ({selected_country_for_medal})')
+        gold_medal_tally = helper.filter_gold_medal_tally_by_country(df, selected_country_for_medal)
+        st.table(gold_medal_tally)
+
+    # Line plot of Total Medals won by Countries over Time
+    with st.container(border=True):
+        medal_over_time_by_country = helper.medal_over_time_by_country(df, selected_country_for_medal)
+        fig = plt.figure(figsize=(10, 5))
+        sns.lineplot(medal_over_time_by_country, x='Year', y='Medal', palette='bright')
+        plt.title(f'{selected_country_for_medal} performance over Time')
+        plt.xlabel("Year")
+        plt.ylabel('Number of Medals')
+        st.pyplot(fig)
+
+    # Heatmap of No of Medal won in every Sports over the Years
+    with st.container(border=True):
+        pt = helper.medal_in_sports_over_time_by_country(df, selected_country_for_medal)
+        fig = plt.figure(figsize=(20,15))
+        sns.heatmap(pt, annot=True)
+        st.header(f'{selected_country_for_medal} performance in every Sports over the Years')
+        st.pyplot(fig)
+
+
+
 
