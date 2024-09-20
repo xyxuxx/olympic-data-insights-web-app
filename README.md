@@ -1,5 +1,5 @@
 
-# Olympics Data Insights Web App
+# Olympic Data Insights Web App
 
 This web app provides insights into Olympic data using interactive visualizations built with `Streamlit`, `matplotlib`, and `seaborn`. Users can explore various metrics related to Olympic athletes, events, and countries through intuitive charts and graphs.
 
@@ -53,10 +53,13 @@ olympics-data-insights-web-app/
 ## 📦 Dependencies
 
 - **Streamlit**: Web framework for creating interactive apps.
+- **numpy**: Support for large, multi-dimensional arrays and matrices.
+- **pandas**: Data manipulation and analysis.
 - **matplotlib**: Visualization library for plotting charts and graphs.
 - **seaborn**: Statistical data visualization library for attractive and informative graphics.
-- **pandas**: Data manipulation and analysis.
-- **numpy**: Support for large, multi-dimensional arrays and matrices.
+
+
+  
 ## 🛠️ Installation
 
 Follow the steps below to set up and run the project locally:
