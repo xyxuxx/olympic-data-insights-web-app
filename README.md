@@ -45,7 +45,8 @@ olympics-data-insights-web-app/
 ├── app.py                # Main Streamlit app file
 ├── favicon.png           # Favicon for the web app
 ├── helper.py             # Script containing helper functions for the app
-├── preprocessor.py       # Script for preprocessing data before analysis               
+├── preprocessor.py       # Script for preprocessing data before analysis
+├── requirements.txt      # List of all the necessary Python packages              
 └── README.md             # Project documentation
 ````
 
